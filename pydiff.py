@@ -12,26 +12,14 @@ import sys
 def astlineno(la, ra):
     lno = None
     rno = None
-    if hasattr(la, 'ast_child_lineno_found'):
-        return True
-    if hasattr(ra, 'ast_child_lineno_found'):
-        return True
-    if isinstance(la, ast.Node):
-        try:
-            lno = la.lineno
-        except AttributeError:
-            pass
-    if isinstance(ra, ast.Node):
-        try:
-            rno = ra.lineno
-        except AttributeError:
-            pass
+    try:
+        lno = la.lineno
+        rno = ra.lineno
+    except AttributeError:
+        pass
+    #if isinstance(la, ast.Node):
+    #if isinstance(ra, ast.Node):
     if (lno is not None) or (rno is not None):
-        try:
-            la.ast_child_lineno_found = True
-            ra.ast_child_lineno_found = True
-        except AttributeError:
-            pass
         return [((lno, repr(la)), (rno, repr(ra)))]
     return []
 
@@ -52,6 +40,9 @@ def is_seq_kind(l):
         for i in l:
             break
     except TypeError:
+        return False
+
+    if not hasattr(l, '__len__'):
         return False
 
     return True
@@ -100,16 +91,58 @@ def astdiff_maps(la, ra):
     return r, diffs
 
 
+def ast_find_next_match(item, seq, rstart):
+    c = len(seq)
+    i = rstart
+    while i < c:
+        r, diffs = astdiff(item, seq[i])
+        if r:
+            return i
+        i += 1
+    return None
+
+
+def ast_diff_zip(ls, rs):
+    diffs = []
+    for li, ri in izip_longest(ls, rs):
+        r, idiffs = astdiff(li, ri)
+        if not r:
+            if idiffs != []:
+                diffs.extend(idiffs)
+            else:
+                diffs.extend(astlineno(li, ri))
+    return diffs
+
+
 def astdiff_seqs(la, ra):
     diffs = []
     r = True
     #two sequences are equal if items are equal
-    for li, ri in izip_longest(la, ra):
-        iresult, idiffs = astdiff(li, ri)
-        if not iresult:
-            if idiffs != []:
-                diffs.extend(idiffs)
-            r = False
+    li = 0
+    ri = 0
+    lc = len(la)
+    rc = len(ra)
+    li_mis = 0  # if la[li] == ra[ri], then li_mis = li + 1
+
+    while li < lc and ri < rc:
+        iresult, idiffs = astdiff(la[li], ra[ri])
+        if iresult:
+            li += 1
+            ri += 1
+            li_mis = li
+            continue
+        r = False
+        nxt = ast_find_next_match(la[li], ra, ri)
+        if nxt is None:
+            li += 1
+            continue
+        diffs.extend(ast_diff_zip(la[li_mis:li], ra[ri:nxt]))
+        ri = nxt + 1
+        li += 1
+        li_mis = li
+
+    diffs.extend(ast_diff_zip(la[li_mis:lc], ra[ri:rc]))
+
     if (not r) and (diffs == []):
         diffs.extend(astlineno(la, ra))
     return r, diffs
