@@ -1,0 +1,7 @@
+python pydiff.py [--diffdoc] file1 file2
+
+Compare Python scripts in syntax level, not in text level.
+This tool can help you to find changes in code logic.
+
+It does not compare docstring by default.
+Add --diffdoc option to compare docstrings as well.
