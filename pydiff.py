@@ -5,8 +5,25 @@ from pprint import pprint
 from itertools import izip_longest
 import sys
 
-#import rpdb2
-#rpdb2.start_embedded_debugger('123456')
+
+class dCache(object):
+    def __init__(self):
+        self.c = {}
+
+    def lookup(self, la, ra):
+        try:
+            diff = self.c[(id(la), id(ra))]
+        except KeyError:
+            diff = []
+        return diff
+
+    def update(self, la, ra, diff):
+        if (diff != []) and (not self.c.has_key((id(la), id(ra)))):
+            self.c[(id(la), id(ra))] = diff
+        return
+
+
+_dc = dCache()
 
 
 def astlineno(la, ra, lpno=None, rpno=None):
@@ -86,7 +103,9 @@ def astdiff_objects(la, ra, lno=None, rno=None):
                 diffs.extend(attrdiffs)
             r = False
     if (not r) and (diffs == []):
-        diffs.extend(astlineno(la, ra, lno, rno))
+        di = astlineno(la, ra, lno, rno)
+        diffs.extend(di)
+    _dc.update(la, ra, diffs)
     return r, diffs
 
 
@@ -106,7 +125,9 @@ def astdiff_maps(la, ra, lno=None, rno=None):
                 diffs.extend(idiffs)
             r = False
     if (not r) and (diffs == []):
-        diffs.extend(astlineno(la, ra, lno, rno))
+        di = astlineno(la, ra, lno, rno)
+        diffs.extend(di)
+    _dc.update(la, ra, diffs)
     return r, diffs
 
 
@@ -129,7 +150,8 @@ def ast_diff_zip(ls, rs, lno=None, rno=None):
             if idiffs != []:
                 diffs.extend(idiffs)
             else:
-                diffs.extend(astlineno(li, ri, lno, rno))
+                di = astlineno(li, ri, lno, rno)
+                diffs.extend(di)
     return diffs
 
 
@@ -163,7 +185,9 @@ def astdiff_seqs(la, ra, lno=None, rno=None):
     diffs.extend(ast_diff_zip(la[li_mis:lc], ra[ri:rc], lno, rno))
 
     if (not r) and (diffs == []):
-        diffs.extend(astlineno(la, ra, lno, rno))
+        di = astlineno(la, ra, lno, rno)
+        diffs.extend(di)
+    _dc.update(la, ra, diffs)
     return r, diffs
 
 
@@ -172,11 +196,15 @@ def astdiff_builtin(la, ra, lno=None, rno=None):
         return True, []
     diffs = []
     if (lno is not None) or (rno is not None):
-        diffs = ((lno, la), (rno, ra))
+        diffs = [((lno, la), (rno, ra))]
     return False, diffs
 
 
 def astdiff(la, ra, lno=None, rno=None):
+    di = _dc.lookup(la, ra)
+    if di != []:
+        return False, di
+
     if (lno is None) and hasattr(la, 'lineno'):
         if la.lineno is not None:
             lno = la.lineno
@@ -204,6 +232,11 @@ def astdiff(la, ra, lno=None, rno=None):
     return astdiff_builtin(la, ra, lno, rno)
 
 
+def pydiff(la, ra):
+    _dc = dCache()
+    return astdiff(la, ra, None, None)
+
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         sys.stderr.write('Usage: %s file1 file2\n' % sys.argv[0])
@@ -215,6 +248,20 @@ if __name__ == '__main__':
     la = transformer.parseFile(lf)
     ra = transformer.parseFile(rf)
 
-    r, diffs = astdiff(la, ra)
-    pprint(r)
-    pprint(diffs)
+    r, diffs = pydiff(la, ra)
+
+    if r:
+        print 'same'
+    else:
+        print '%d difference(s)' % len(diffs)
+        print 'left file: %s\nright file: %s\n' % (lf, rf)
+        for it in diffs:
+            pprint(it)
+            print
+
+    if r:
+        # same
+        exit(0)
+    else:
+        # different
+        exit(1)
