@@ -20,7 +20,7 @@ class dCache(object):
         return diff
 
     def update(self, la, ra, diff):
-        if (diff != []) and (not self.c.has_key((id(la), id(ra)))):
+        if (diff != []) and ((id(la), id(ra)) not in self.c):
             self.c[(id(la), id(ra))] = diff
         return
 
@@ -235,6 +235,7 @@ def astdiff(la, ra, lno=None, rno=None):
 
 
 def pydiff(la, ra):
+    global _dc
     _dc = dCache()
     return astdiff(la, ra, None, None)
 
@@ -263,17 +264,12 @@ if __name__ == '__main__':
     r, diffs = pydiff(la, ra)
 
     if r:
-        print 'same'
-    else:
-        print '%d difference(s)' % len(diffs)
-        print 'left file: %s\nright file: %s\n' % (lf, rf)
-        for it in diffs:
-            pprint(it)
-            print
-
-    if r:
-        # same
         exit(0)
-    else:
-        # different
-        exit(1)
+
+    print '%d difference(s)' % len(diffs)
+    print 'first file: %s\nsecond file: %s\n' % (lf, rf)
+    for it in diffs:
+        pprint(it)
+        print
+
+    exit(1)
