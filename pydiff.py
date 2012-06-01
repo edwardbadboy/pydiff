@@ -93,8 +93,8 @@ def astdiff_objects(la, ra, lno=None, rno=None):
             break
         if lk == 'lineno' and rk == 'lineno':
             continue
-        if lk == 'doc' and rk == 'doc':
-            continue
+        #if lk == 'doc' and rk == 'doc':
+            #continue
         lattr = getattr(la, lk)
         rattr = getattr(ra, rk)
         attrresult, attrdiffs = astdiff(lattr, rattr, lno, rno)
