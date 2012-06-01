@@ -205,10 +205,10 @@ def astdiff(la, ra, lno=None, rno=None):
     if di != []:
         return False, di
 
-    if (lno is None) and hasattr(la, 'lineno'):
+    if hasattr(la, 'lineno'):
         if la.lineno is not None:
             lno = la.lineno
-    if (rno is None) and hasattr(ra, 'lineno'):
+    if hasattr(ra, 'lineno'):
         if ra.lineno is not None:
             rno = ra.lineno
 
