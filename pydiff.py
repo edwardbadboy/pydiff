@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+from getopt import getopt
 from compiler import transformer
-from compiler import ast
 from pprint import pprint
 from itertools import izip_longest
 import sys
+
+_diffdoc = False
 
 
 class dCache(object):
@@ -93,8 +95,8 @@ def astdiff_objects(la, ra, lno=None, rno=None):
             break
         if lk == 'lineno' and rk == 'lineno':
             continue
-        #if lk == 'doc' and rk == 'doc':
-            #continue
+        if (not _diffdoc) and (lk == 'doc' and rk == 'doc'):
+            continue
         lattr = getattr(la, lk)
         rattr = getattr(ra, rk)
         attrresult, attrdiffs = astdiff(lattr, rattr, lno, rno)
@@ -237,13 +239,23 @@ def pydiff(la, ra):
     return astdiff(la, ra, None, None)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        sys.stderr.write('Usage: %s file1 file2\n' % sys.argv[0])
-        exit(1)
+def usage(writefunc):
+    writefunc('Usage:\n%s [--diffdoc] file1 file2\n' % sys.argv[0])
+    writefunc('    --diffdoc: add this option if you want to '
+              'compare docstrings as well.\n')
 
-    lf = sys.argv[1]
-    rf = sys.argv[2]
+
+if __name__ == '__main__':
+    opts, args = getopt(sys.argv[1:], '', ['diffdoc'])
+    if len(args) != 2:
+        usage(sys.stderr.write)
+        exit(1)
+    for opt, value in opts:
+        if opt == '--diffdoc':
+            _diffdoc = True
+
+    lf = args[0]
+    rf = args[1]
 
     la = transformer.parseFile(lf)
     ra = transformer.parseFile(rf)
