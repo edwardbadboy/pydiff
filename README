@@ -1,7 +1,53 @@
 python pydiff.py [--diffdoc] file1 file2
 
 Compare Python scripts in syntax level, not in text level.
-This tool can help you to find changes in code logic.
+This tool can help you to find changes in code logic, ignoring
+code style changes.
 
-It does not compare docstring by default.
+It does not compare docstrings by default.
 Add --diffdoc option to compare docstrings as well.
+
+
+Example usage:
+
+        test_o.py
+def foo(a, b):
+    pass
+
+if __name__ == '__main__':
+    A = [1, 2, 3]
+    print (4, 5, 6), \
+          "over"
+    foo(1, 2)
+    print 'Hello World'
+
+
+        test_n.py
+def foo(a, b):
+    pass
+
+if __name__ == '__main__':
+    A = [1,
+         2, 3]
+    print (4, 5, 6), "over"
+    fooo(
+         1, 2)
+    print ('Hello '
+           'World')
+
+
+These two files are different, but some differences are just a matter of style.
+The only significant difference is the function call "foo()" is misspelled in test_n.py.
+
+Run pydiff.py, it will report:
+
+$ python pydiff.py test_*.py
+1 difference(s)
+first file: test_n.py
+second file: test_o.py
+
+((8, 'fooo'), (8, 'foo'))
+
+This report tells us the changes that might affect the logic of the code, and print related line numbers.
+In fact pydiff parses the files into Abstract Syntax Tree, and compare the trees recursively.
+It can also find insertions and deletions.
