@@ -190,7 +190,17 @@ def ast_find_next_match(item, seq, rstart, lno=None, rno=None):
 # zip two sequence with astdiff
 def ast_diff_zip(ls, rs, lno=None, rno=None):
     diffs = []
+    preli = None
+    preri = None
     for li, ri in izip_longest(ls, rs):
+        if li is None:
+            li = preli
+        else:
+            preli = li
+        if ri is None:
+            ri = preri
+        else:
+            preri = ri
         r, idiffs = astdiff(li, ri, lno, rno)
         if not r:
             if idiffs != []:
@@ -217,6 +227,12 @@ def astdiff_seqs(la, ra, lno=None, rno=None):
     li_mis = 0  # if la[li] == ra[ri], then li_mis = li + 1
 
     while li < lc and ri < rc:
+        if hasattr(la[li], 'lineno'):
+            if la[li].lineno is not None:
+                lno = la[li].lineno
+        if hasattr(ra[ri], 'lineno'):
+            if ra[ri].lineno is not None:
+                rno = ra[ri].lineno
         iresult, idiffs = astdiff(la[li], ra[ri], lno, rno)
         if iresult:
             li += 1
@@ -224,14 +240,22 @@ def astdiff_seqs(la, ra, lno=None, rno=None):
             li_mis = li
             continue
         r = False
-        nxt = ast_find_next_match(la[li], ra, ri, lno, rno)
-        if nxt is None:
+
+        while (li < lc):
+            nxt = ast_find_next_match(la[li], ra, ri, lno, rno)
+            if nxt is not None:
+                if hasattr(la[li], 'lineno'):
+                    if la[li].lineno is not None:
+                        lno = la[li].lineno
+                if hasattr(ra[nxt], 'lineno'):
+                    if ra[nxt].lineno is not None:
+                        rno = ra[nxt].lineno
+                diffs.extend(ast_diff_zip(la[li_mis:li], ra[ri:nxt], lno, rno))
+                ri = nxt + 1
+                li += 1
+                li_mis = li
+                break
             li += 1
-            continue
-        diffs.extend(ast_diff_zip(la[li_mis:li], ra[ri:nxt], lno, rno))
-        ri = nxt + 1
-        li += 1
-        li_mis = li
 
     diffs.extend(ast_diff_zip(la[li_mis:lc], ra[ri:rc], lno, rno))
 
