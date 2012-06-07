@@ -156,7 +156,7 @@ def astdiff_objects(la, ra, lno=None, rno=None):
 def astdiff_maps(la, ra, lno=None, rno=None):
     diffs = []
     r = True
-    #two mappings are equal if items are equal
+    # two mappings are equal if items are equal
     lkeys = sorted(la.keys())
     rkeys = sorted(ra.keys())
     for lk, rk in izip_longest(lkeys, rkeys):
@@ -219,7 +219,7 @@ def ast_diff_zip(ls, rs, lno=None, rno=None):
 def astdiff_seqs(la, ra, lno=None, rno=None):
     diffs = []
     r = True
-    #two sequences are equal if items are equal
+    # two sequences are equal if items are equal
     li = 0
     ri = 0
     lc = len(la)
