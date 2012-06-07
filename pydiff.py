@@ -1,13 +1,33 @@
 #!/usr/bin/env python
+#
+# Copyright (C) 2012 Zhou Zheng Sheng, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+#
+
 from getopt import getopt
 from compiler import transformer
 from pprint import pprint
 from itertools import izip_longest
 import sys
 
+# global option: if we should compare docstrings
 _diffdoc = False
 
 
+# A cache for differences of syntax nodes
 class dCache(object):
     def __init__(self):
         self.c = {}
@@ -29,6 +49,7 @@ _dc = dCache()
 
 
 # taken from PEP 257
+# trim tabs and spaces in the docstrings
 def trimdocstring(docstring):
     if not docstring:
         return ''
@@ -55,6 +76,7 @@ def trimdocstring(docstring):
     return '\n'.join(trimmed)
 
 
+# figure out the line numbers of la and ra
 def astlineno(la, ra, lpno=None, rpno=None):
     lno = None
     rno = None
@@ -72,6 +94,7 @@ def astlineno(la, ra, lpno=None, rpno=None):
     return []
 
 
+# can m be treated like a mapping object
 def is_map_kind(m):
     try:
         for k in m.iterkeys():
@@ -83,6 +106,7 @@ def is_map_kind(m):
     return True
 
 
+# can l be treated like a sequence (list)
 def is_seq_kind(l):
     try:
         for i in l:
@@ -96,21 +120,7 @@ def is_seq_kind(l):
     return True
 
 
-def ast_lineno_inherit(parent, child):
-    lineno = None
-    try:
-        lineno = parent.lineno
-    except AttributeError:
-        return
-
-    if not hasattr(child, 'lineno'):
-        try:
-            child.lineno = lineno
-        except AttributeError:
-            pass
-    return
-
-
+# get differences between syntax nodes
 def astdiff_objects(la, ra, lno=None, rno=None):
     diffs = []
     r = True
@@ -142,6 +152,7 @@ def astdiff_objects(la, ra, lno=None, rno=None):
     return r, diffs
 
 
+# get differences between mapping objects
 def astdiff_maps(la, ra, lno=None, rno=None):
     diffs = []
     r = True
@@ -164,6 +175,7 @@ def astdiff_maps(la, ra, lno=None, rno=None):
     return r, diffs
 
 
+# find the next same element(same is in terms of astdiff) in the sequence
 def ast_find_next_match(item, seq, rstart, lno=None, rno=None):
     c = len(seq)
     i = rstart
@@ -175,6 +187,7 @@ def ast_find_next_match(item, seq, rstart, lno=None, rno=None):
     return None
 
 
+# zip two sequence with astdiff
 def ast_diff_zip(ls, rs, lno=None, rno=None):
     diffs = []
     for li, ri in izip_longest(ls, rs):
@@ -188,6 +201,11 @@ def ast_diff_zip(ls, rs, lno=None, rno=None):
     return diffs
 
 
+# get differences between sequences.
+# usually the sequences are children nodes of a Stmt Node.
+# Stmt Node represent a block of statements, its children
+# are statements in the block. So the function must deal with
+# insertion, deletion and modification of the elements.
 def astdiff_seqs(la, ra, lno=None, rno=None):
     diffs = []
     r = True
@@ -224,6 +242,7 @@ def astdiff_seqs(la, ra, lno=None, rno=None):
     return r, diffs
 
 
+# get differences between builtin objects like int, float...
 def astdiff_builtin(la, ra, lno=None, rno=None):
     if la == ra:
         return True, []
@@ -233,7 +252,9 @@ def astdiff_builtin(la, ra, lno=None, rno=None):
     return False, diffs
 
 
+# get differences between two Abstract Syntax Trees
 def astdiff(la, ra, lno=None, rno=None):
+    # inspect the difference cache
     di = _dc.lookup(la, ra)
     if di != []:
         return False, di
