@@ -257,6 +257,9 @@ def astdiff_seqs(la, ra, lno=None, rno=None):
                 break
             li += 1
 
+    if(lc != rc):
+        r = False
+
     diffs.extend(ast_diff_zip(la[li_mis:lc], ra[ri:rc], lno, rno))
 
     if (not r) and (diffs == []):
