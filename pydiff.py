@@ -187,24 +187,34 @@ def ast_find_next_match(item, seq, rstart, lno=None, rno=None):
 
 # zip two sequence with astdiff
 def ast_diff_zip(ls, rs, lno=None, rno=None):
+    def extractLineNO(subject, lineNO):
+        l = None
+        try:
+            l = str(subject.lineno) + ' +'
+        except AttributeError:
+            l = str(lineNO) + ' + -'
+        return l
+
     diffs = []
     preli = None
     preri = None
     for li, ri in izip_longest(ls, rs):
+        lno1 = lno
+        rno1 = rno
         if li is None:
-            li = preli
+            lno1 = extractLineNO(preli, lno)
         else:
             preli = li
         if ri is None:
-            ri = preri
+            rno1 = extractLineNO(preri, rno)
         else:
             preri = ri
-        r, idiffs = astdiff(li, ri, lno, rno)
+        r, idiffs = astdiff(li, ri, lno1, rno1)
         if not r:
             if idiffs != []:
                 diffs.extend(idiffs)
             else:
-                di = astlineno(li, ri, lno, rno)
+                di = astlineno(li, ri, lno1, rno1)
                 diffs.extend(di)
     return diffs
 
