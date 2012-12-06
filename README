@@ -51,3 +51,15 @@ second file: test_o.py
 This report tells us the changes that might affect the logic of the code, and print related line numbers.
 In fact pydiff parses the files into Abstract Syntax Tree, and compare the trees recursively.
 It can also find insertions and deletions.
+
+
+
+gitpydiff [commitID|branch or tag ref]
+
+pydiff all .py and .py.in files in a git commit to it's parent commit.
+
+
+
+install.sh
+
+make symbol link /usr/bin/pydiff to pydiff.py and /usr/bin/gitpydiff to gitpydiff.
