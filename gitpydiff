@@ -1,0 +1,32 @@
+#!/usr/bin/bash
+diffDir=/tmp/pydiff
+fileList="$diffDir"/filelist
+mkdir -p "$diffDir"
+
+git status --porcelain -uno | egrep '^\sM\s.+$' >/dev/null
+modification=$(git diff; git diff --cached)
+if [ "$modification" != "" ]; then
+	git status
+	echo
+	echo 'Error: Workspace or git index is not clean.' >&2
+	exit 1
+fi
+
+commitHead="$1"
+if [ "$commitHead" == "" ]; then
+	commitHead=$(git log --pretty=format:%H -1 HEAD)
+else
+	commitHead=$(git log --pretty=format:%H -1 "$commitHead")
+fi
+
+git checkout -q "$commitHead"
+git show --pretty=format:"" --numstat | awk '/(\.py|\.py.in)$/{print $3}' >"$fileList"
+cat "$fileList" | xargs -I{F} /usr/bin/cp -f --parents {F} "$diffDir"
+git checkout -q "$commitHead"~1
+
+cat "$fileList" | while read filePath; do
+	echo checking "$filePath"
+	pydiff "$filePath" "$diffDir"/"$filePath"
+done
+
+git checkout -q "$commitHead"
